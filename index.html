@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AIMX Key System</title>
+  <meta name="color-scheme" content="dark">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #080b10;
+      --surface:  #0c1018;
+      --surface2: #101520;
+      --surface3: #141b26;
+      --border:   #1e2a3a;
+      --border2:  #243347;
+      --text:     #e8f0fc;
+      --muted:    #6b82a0;
+      --dim:      #3d5070;
+
+      --green:    #00e676;
+      --green-d:  #00a152;
+      --blue:     #2979ff;
+      --blue-d:   #1a55cc;
+      --amber:    #ffb300;
+      --red:      #ff3d3d;
+      --purple:   #9c6cff;
+
+      --mono: 'Space Mono', monospace;
+      --sans: 'Syne', system-ui, sans-serif;
+
+      --r:    10px;
+      --r-lg: 16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* === GRID NOISE BACKGROUND === */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(41,121,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(41,121,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* === LAYOUT === */
+    .shell {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) { .shell { grid-template-columns: 1fr; } }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      position: sticky; top: 0; height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 20px 12px;
+      overflow: hidden;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 8px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .logo-mark {
+      width: 34px; height: 34px;
+      background: conic-gradient(from 0deg, var(--blue), var(--green), var(--purple), var(--blue));
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      color: #fff;
+      animation: spin-slow 8s linear infinite;
+    }
+    @keyframes spin-slow { to { filter: hue-rotate(360deg); } }
+    .logo-text { font-size: 17px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo-ver { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+    .nav-section { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--dim); padding: 0 8px; margin-bottom: 6px; }
+    .nav-group { margin-bottom: 20px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: var(--r);
+      border: 1px solid transparent;
+      font-size: 14px; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      background: none; width: 100%; text-align: left;
+      transition: all .15s;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { color: var(--text); background: var(--surface2); border-color: var(--border); }
+    .nav-item.active {
+      color: var(--green); background: rgba(0,230,118,.07);
+      border-color: rgba(0,230,118,.2);
+    }
+    .nav-item .ic { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-item .badge-pill {
+      margin-left: auto; font-size: 10px; font-family: var(--mono);
+      background: var(--blue); color: #fff;
+      padding: 1px 6px; border-radius: 99px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 10px 8px 0;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer .nav-item.danger { color: var(--red); }
+    .sidebar-footer .nav-item.danger:hover { background: rgba(255,61,61,.08); border-color: rgba(255,61,61,.2); }
+
+    /* === MAIN === */
+    .main { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* === TOPBAR === */
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(8,11,16,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .page-title { font-size: 16px; font-weight: 800; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+    /* === STATUS PILL === */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; font-family: var(--mono);
+      border: 1px solid;
+    }
+    .status-pill.ok   { background: rgba(0,230,118,.1); border-color: rgba(0,230,118,.3); color: var(--green); }
+    .status-pill.warn { background: rgba(255,179,0,.1);  border-color: rgba(255,179,0,.3);  color: var(--amber); }
+    .status-pill.err  { background: rgba(255,61,61,.1);  border-color: rgba(255,61,61,.3);  color: var(--red); }
+    .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* === BUTTONS === */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 13px; border-radius: var(--r);
+      font-family: var(--sans); font-size: 13px; font-weight: 700;
+      border: 1px solid var(--border2); cursor: pointer;
+      background: var(--surface2); color: var(--text);
+      transition: all .15s; white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface3); border-color: var(--blue); transform: translateY(-1px); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn:active { transform: translateY(0); }
+
+    .btn.primary { background: var(--green); border-color: var(--green-d); color: #050f07; }
+    .btn.primary:hover { background: #1aff88; }
+    .btn.info    { background: var(--blue);  border-color: var(--blue-d);  color: #fff; }
+    .btn.info:hover { background: #4d93ff; }
+    .btn.warn    { background: rgba(255,179,0,.15); border-color: rgba(255,179,0,.4); color: var(--amber); }
+    .btn.warn:hover { background: rgba(255,179,0,.25); }
+    .btn.danger  { background: rgba(255,61,61,.15); border-color: rgba(255,61,61,.4); color: var(--red); }
+    .btn.danger:hover { background: rgba(255,61,61,.25); }
+    .btn.sm { padding: 5px 10px; font-size: 12px; }
+    .btn.xs { padding: 3px 8px; font-size: 11px; border-radius: 6px; }
+
+    /* === INPUTS === */
+    .inp, .sel, textarea.inp {
+      background: var(--surface); border: 1px solid var(--border2);
+      color: var(--text); padding: 9px 12px; border-radius: var(--r);
+      font-family: var(--sans); font-size: 13px; width: 100%;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .inp:focus, .sel:focus, textarea.inp:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(41,121,255,.15);
+    }
+    .inp::placeholder { color: var(--dim); }
+    label.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+    /* === CARDS === */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px;
+    }
+
+    /* === KPI GRID === */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px 18px;
+      position: relative; overflow: hidden;
+    }
+    .kpi-card::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent, var(--blue));
+    }
+    .kpi-card:nth-child(1) { --accent: var(--blue); }
+    .kpi-card:nth-child(2) { --accent: var(--green); }
+    .kpi-card:nth-child(3) { --accent: var(--amber); }
+    .kpi-card:nth-child(4) { --accent: var(--red); }
+    .kpi-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .8px; text-transform: uppercase; }
+    .kpi-val { font-family: var(--mono); font-size: 28px; font-weight: 700; margin-top: 4px; color: var(--accent, var(--text)); }
+    .kpi-sub { font-size: 11px; color: var(--dim); margin-top: 2px; font-family: var(--mono); }
+
+    /* === CONTENT AREA === */
+    .content { flex: 1; padding: 20px; }
+
+    /* === TABLE === */
+    .table-toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 12px;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap .ic { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--dim); pointer-events: none; }
+    .search-wrap .inp { padding-left: 32px; }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: auto;
+      background: var(--surface);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    thead th {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border2);
+      padding: 10px 14px;
+      font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted);
+      text-align: left; white-space: nowrap;
+      position: sticky; top: 0; z-index: 2;
+    }
+    thead th.sort { cursor: pointer; user-select: none; }
+    thead th.sort:hover { color: var(--text); }
+    thead th .sort-ic { font-size: 10px; margin-left: 3px; opacity: .4; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; vertical-align: middle; }
+    .mono { font-family: var(--mono); font-size: 12px; }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 6px;
+      font-size: 11px; font-weight: 700; font-family: var(--mono);
+      border: 1px solid;
+    }
+    .chip.active  { background: rgba(0,230,118,.1); border-color: rgba(0,230,118,.3); color: var(--green); }
+    .chip.expired { background: rgba(255,179,0,.1);  border-color: rgba(255,179,0,.3);  color: var(--amber); }
+    .chip.banned  { background: rgba(255,61,61,.1);  border-color: rgba(255,61,61,.3);  color: var(--red); }
+    .chip.pending { background: rgba(107,130,160,.1); border-color: rgba(107,130,160,.3); color: var(--muted); }
+
+    .action-row { display: flex; gap: 4px; }
+
+    /* === BULK BAR === */
+    .bulk-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; border-radius: var(--r);
+      background: rgba(41,121,255,.08); border: 1px solid rgba(41,121,255,.25);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .bulk-count {
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      background: var(--blue); color: #fff; padding: 2px 8px; border-radius: 6px;
+    }
+
+    /* === PAGINATION === */
+    .pager { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; flex-wrap: wrap; gap: 8px; }
+    .pager-info { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+    /* === FREE TAB === */
+    .free-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 860px) { .free-layout { grid-template-columns: 1fr; } }
+
+    .free-output-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .free-output-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .free-output-header h3 { font-size: 13px; font-weight: 700; }
+    .key-list {
+      font-family: var(--mono); font-size: 13px;
+      padding: 14px; height: 380px;
+      overflow-y: auto; white-space: pre;
+      color: var(--green); line-height: 1.9;
+    }
+    .key-list .key-line { display: flex; align-items: center; gap: 8px; }
+    .key-list .key-line .idx { color: var(--dim); width: 28px; text-align: right; flex-shrink: 0; }
+    .key-list .key-line .kk  { color: var(--green); }
+    .key-list .key-line .cp  { cursor: pointer; color: var(--dim); font-size: 11px; margin-left: auto; opacity: 0; transition: opacity .15s; }
+    .key-list .key-line:hover .cp { opacity: 1; }
+
+    .progress-wrap { margin-top: 12px; display: none; }
+    .progress-bar-outer { background: var(--surface3); border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-bar-inner { height: 100%; background: var(--green); border-radius: 99px; transition: width .2s; }
+    .progress-label { font-size: 12px; font-family: var(--mono); color: var(--muted); margin-top: 4px; }
+
+    /* === MODALS === */
+    .overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--r-lg);
+      max-width: 520px; width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,.6);
+      animation: modal-in .2s ease;
+    }
+    @keyframes modal-in { from { transform: scale(.95) translateY(10px); opacity: 0; } }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+    }
+    .modal-head h2 { font-size: 15px; font-weight: 800; }
+    .modal-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-foot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* === LOGIN FULL OVERLAY === */
+    #loginOverlay {
+      position: fixed; inset: 0; z-index: 60;
+      display: none; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 30% 20%, rgba(41,121,255,.12), transparent 60%),
+                  rgba(0,0,0,.75);
+      backdrop-filter: blur(8px);
+    }
+    #loginOverlay.open { display: flex; }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 380px; width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,.7);
+      animation: modal-in .25s ease;
+    }
+    .login-card .logo-mark { margin-bottom: 20px; width: 42px; height: 42px; font-size: 14px; }
+    .login-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .login-card p { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+    /* === TOAST === */
+    #toast {
+      position: fixed; bottom: 20px; right: 20px; z-index: 100;
+      max-width: 320px; pointer-events: none;
+    }
+    .toast-item {
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-left: 3px solid var(--blue);
+      padding: 10px 14px; border-radius: var(--r);
+      font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      animation: toast-in .25s ease;
+    }
+    @keyframes toast-in { from { transform: translateY(16px); opacity: 0; } }
+    .toast-item.success { border-left-color: var(--green); }
+    .toast-item.error   { border-left-color: var(--red); }
+    .toast-item.warn    { border-left-color: var(--amber); }
+
+    /* === NET STATUS === */
+    #netBar {
+      position: fixed; left: 16px; bottom: 16px; z-index: 40;
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 99px; padding: 5px 10px;
+      font-size: 11px; font-family: var(--mono); color: var(--muted);
+    }
+
+    /* === SKELETON === */
+    .skel {
+      background: var(--surface2); border-radius: 6px;
+      position: relative; overflow: hidden;
+    }
+    .skel::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.04), transparent);
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+    /* === MISC === */
+    .hidden { display: none !important; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .gap-col { display: flex; flex-direction: column; gap: 10px; }
+    .sep { height: 1px; background: var(--border); margin: 4px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+    input[type=checkbox] { accent-color: var(--blue); width: 15px; height: 15px; cursor: pointer; }
+    .cb-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+  </style>
+</head>
+<body>
+
+<!-- NET STATUS -->
+<div id="netBar">
+  <span id="netDot" style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block"></span>
+  <span id="netTxt">ONLINE</span>
+  <span id="syncTxt" style="color:var(--dim)"></span>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="logo-mark">AX</div>
+    <h2>Đăng nhập</h2>
+    <p>Hệ thống quản lý key AIMX</p>
+    <div class="gap-col">
+      <label class="field">Tài khoản
+        <input id="loginUser" class="inp" placeholder="admin" autocomplete="username">
+      </label>
+      <label class="field">Mật khẩu
+        <input id="loginPass" type="password" class="inp" placeholder="••••••••" autocomplete="current-password">
+      </label>
+      <div id="loginErr" style="color:var(--red);font-size:12px" class="hidden"></div>
+      <button id="btnLogin" class="btn primary" style="width:100%;justify-content:center;padding:10px">
+        <span id="loginSpinnerTxt">Đăng nhập</span>
+      </button>
+      <button id="btnCloseLogin" class="btn" style="width:100%;justify-content:center">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="mConfirm" class="overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h2 id="cfTitle">Xác nhận</h2>
+    </div>
+    <div class="modal-body">
+      <p id="cfMsg" style="color:var(--muted);font-size:14px">Bạn có chắc?</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-confirm>Hủy</button>
+      <button id="cfYes" class="btn danger">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE KEY MODAL -->
+<div id="mCreate" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>✦ Tạo Key mới</h2>
+      <button class="btn sm" data-close-create>Đóng ✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <label class="field" style="flex:1">Số ngày
+          <input id="cDays" type="number" min="1" value="7" class="inp">
+        </label>
+        <label class="field" style="flex:1">Loại key
+          <select id="cType" class="sel inp">
+            <option value="single_device">1 Thiết bị</option>
+            <option value="multi_device">Nhiều thiết bị</option>
+          </select>
+        </label>
+      </div>
+      <label class="field">Người tạo
+        <input id="cCreator" class="inp" value="AdminPanel">
+      </label>
+      <label class="field">Ghi chú (tuỳ chọn)
+        <input id="cNote" class="inp" placeholder="Ví dụ: tặng user A">
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-create>Hủy</button>
+      <button id="cSubmit" class="btn primary">Tạo Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN SHELL -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">AX</div>
+      <div>
+        <div class="logo-text">AIMX Keys</div>
+        <div class="logo-ver">v6.0 admin</div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-section">MENU</div>
+      <button class="nav-item active" id="navKeys"><span class="ic">🔑</span>Quản lý Keys</button>
+      <button class="nav-item" id="navBulk"><span class="ic">🎁</span>Tạo Key Hàng Loạt</button>
+      <button class="nav-item" id="navActivity"><span class="ic">📋</span>Nhật ký <span class="badge-pill">soon</span></button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-section">THAO TÁC</div>
+      <button class="nav-item hidden" id="sideCreate"><span class="ic">➕</span>Tạo Key Đơn</button>
+      <button class="nav-item" id="sideReload"><span class="ic">↺</span>Tải lại</button>
+      <button class="nav-item" id="sideClear"><span class="ic">🧹</span>Clear Cache</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="nav-item" id="sideLogin"><span class="ic">🔐</span>Đăng nhập</button>
+      <button class="nav-item danger hidden" id="sideLogout"><span class="ic">↩</span>Đăng xuất</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="page-title" id="pageTitle">Dashboard</span>
+        <span id="authBadge" class="status-pill warn">Chưa đăng nhập</span>
+      </div>
+      <div class="topbar-right">
+        <button id="topLogin" class="btn info sm">🔐 Đăng nhập</button>
+        <button id="topLogout" class="btn danger sm hidden">↩ Đăng xuất</button>
+      </div>
+    </div>
+
+    <!-- ========== KEYS TAB ========== -->
+    <div id="tabKeys" class="content">
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Tổng Key</div>
+          <div id="kpiTotal" class="kpi-val skel" style="height:36px;width:60px">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Đang hoạt động</div>
+          <div id="kpiActive" class="kpi-val skel" style="height:36px;width:60px">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Hết hạn</div>
+          <div id="kpiExpired" class="kpi-val skel" style="height:36px;width:60px">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">BANNED</div>
+          <div id="kpiBanned" class="kpi-val skel" style="height:36px;width:60px">&nbsp;</div>
+        </div>
+      </div>
+
+      <!-- BULK BAR -->
+      <div id="bulkBar" class="bulk-bar hidden">
+        <span id="bulkCount" class="bulk-count">0</span>
+        <span style="font-size:13px">key được chọn</span>
+        <button id="btnBulkBan"    class="btn danger xs">🚫 Ban</button>
+        <button id="btnBulkUnban"  class="btn xs" style="color:var(--green)">✅ Unban</button>
+        <button id="btnBulkDelete" class="btn danger xs">🗑 Xóa</button>
+        <button id="btnDeselect"   class="btn xs" style="margin-left:auto">✕ Bỏ chọn</button>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="table-toolbar">
+        <div class="search-wrap">
+          <span class="ic">🔍</span>
+          <input id="qSearch" class="inp" placeholder="Tìm key, HWID, IP, người tạo…">
+        </div>
+        <select id="fStatus" class="sel inp" style="width:160px">
+          <option value="">Tất cả trạng thái</option>
+          <option value="ACTIVE">Đang hoạt động</option>
+          <option value="Hết Hạn">Hết hạn</option>
+          <option value="BANNED">Bị ban</option>
+          <option value="Chưa kích hoạt">Chưa kích hoạt</option>
+        </select>
+        <select id="pageSize" class="sel inp" style="width:130px">
+          <option value="15">15 / trang</option>
+          <option value="30">30 / trang</option>
+          <option value="50">50 / trang</option>
+          <option value="100">100 / trang</option>
+        </select>
+        <button id="btnCreate"  class="btn primary hidden">➕ Tạo Key</button>
+        <button id="btnExport"  class="btn">⬇ CSV</button>
+        <button id="btnReload2" class="btn">↺</button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px"><input type="checkbox" id="headerCb"></th>
+              <th style="width:44px">#</th>
+              <th class="sort" data-sort="key_string">KEY <span class="sort-ic">↕</span></th>
+              <th class="sort" data-sort="expires_at">HẠN <span class="sort-ic">↕</span></th>
+              <th>HWID</th>
+              <th>IP</th>
+              <th class="sort" data-sort="created_by">NGƯỜI TẠO <span class="sort-ic">↕</span></th>
+              <th class="sort" data-sort="status">TRẠNG THÁI <span class="sort-ic">↕</span></th>
+              <th style="text-align:right">HÀNH ĐỘNG</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- PAGER -->
+      <div class="pager">
+        <span id="pageInfo" class="pager-info">—</span>
+        <div class="row">
+          <button id="btnPrev" class="btn sm">« Trước</button>
+          <button id="btnNext" class="btn sm">Tiếp »</button>
+        </div>
+      </div>
+
+    </div><!-- /tabKeys -->
+
+    <!-- ========== BULK TAB ========== -->
+    <div id="tabBulk" class="content hidden">
+
+      <div class="free-layout">
+
+        <!-- FORM -->
+        <div class="gap-col">
+          <div class="card">
+            <div style="font-size:16px;font-weight:800;margin-bottom:16px">🎁 Tạo Key Free Hàng Loạt</div>
+            <div class="gap-col">
+              <div class="row">
+                <label class="field" style="flex:1">Số lượng key
+                  <input id="fQty" type="number" min="1" max="500" value="10" class="inp">
+                </label>
+                <label class="field" style="flex:1">Số ngày sử dụng
+                  <input id="fDays" type="number" min="1" value="3" class="inp">
+                </label>
+              </div>
+              <div class="row">
+                <label class="field" style="flex:1">Loại key
+                  <select id="fKtype" class="sel inp">
+                    <option value="single_device">1 Thiết bị</option>
+                    <option value="multi_device">Nhiều thiết bị</option>
+                  </select>
+                </label>
+                <label class="field" style="flex:1">Nhãn người tạo
+                  <input id="fCreator" class="inp" value="Free-Share">
+                </label>
+              </div>
+              <label class="field">Ghi chú (tuỳ chọn)
+                <input id="fNote" class="inp" placeholder="Ví dụ: Share Discord tháng 7">
+              </label>
+
+              <!-- FORMAT OPTIONS -->
+              <div class="sep"></div>
+              <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">ĐỊNH DẠNG XUẤT</div>
+              <div class="row" style="gap:6px">
+                <label class="cb-wrap"><input type="radio" name="fmt" value="plain" checked> <span style="font-size:13px">Plain (1 key/dòng)</span></label>
+                <label class="cb-wrap"><input type="radio" name="fmt" value="numbered"> <span style="font-size:13px">Đánh số</span></label>
+                <label class="cb-wrap"><input type="radio" name="fmt" value="discord"> <span style="font-size:13px">Discord code block</span></label>
+              </div>
+
+              <div class="progress-wrap" id="progressWrap">
+                <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar" style="width:0%"></div></div>
+                <div class="progress-label" id="progressLabel">Đang tạo 0/0…</div>
+              </div>
+
+              <div class="row" style="justify-content:flex-end;margin-top:4px">
+                <button id="fStop" class="btn warn sm hidden">⏹ Dừng</button>
+                <button id="fSubmit" class="btn primary">✦ Tạo Key Free</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUICK STATS -->
+          <div class="card">
+            <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--muted)">PHIÊN NÀY</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <div style="font-size:11px;color:var(--dim)">Đã tạo</div>
+                <div id="sessCreated" style="font-family:var(--mono);font-size:20px;color:var(--green)">0</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--dim)">Lỗi</div>
+                <div id="sessErr" style="font-family:var(--mono);font-size:20px;color:var(--red)">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OUTPUT -->
+        <div class="free-output-wrap">
+          <div class="free-output-header">
+            <h3 id="fResultTitle">Kết quả</h3>
+            <div class="row">
+              <button id="fCopy"     class="btn info xs">📋 Copy tất cả</button>
+              <button id="fDownload" class="btn xs">⬇ Tải .txt</button>
+              <button id="fClear"    class="btn warn xs">🧹 Xóa</button>
+            </div>
+          </div>
+          <div class="key-list" id="keyList">
+            <span style="color:var(--dim);font-size:12px">// Key được tạo sẽ hiện ở đây…</span>
+          </div>
+        </div>
+
+      </div><!-- /free-layout -->
+
+    </div><!-- /tabBulk -->
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+/* ═══════════════ CONFIG ═══════════════ */
+const API_BASE = "https://aovduy-uqpe.onrender.com/api";
+
+/* ═══════════════ STATE ═══════════════ */
+let AUTH = false, PAGE = 1, PAGE_SIZE = 15;
+let DATA = [], SORT = { key: "rank", dir: "asc" }, SELECTED = new Set();
+let LAST_SYNC = null, _stopBulk = false;
+let _sessCreated = 0, _sessErr = 0;
+
+/* ═══════════════ UTILS ═══════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const show = el => el?.classList.remove('hidden');
+const hide = el => el?.classList.add('hidden');
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const nowStr = () => new Date().toLocaleTimeString('vi-VN');
+
+function toast(msg, type = 'info', dur = 2800) {
+  const wrap = $('#toast');
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+
+async function fetchJson(path, { method = 'GET', body = null, timeout = 12000, retries = 1 } = {}) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    const res = await fetch(API_BASE + path, {
+      method, credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : null,
+      signal: ctrl.signal
+    });
+    clearTimeout(tid);
+    if (!res.ok) {
+      let txt = ''; try { txt = await res.text(); } catch {}
+      throw new Error(txt.replace(/^"|"$/g, '') || `Lỗi ${res.status}`);
+    }
+    try { return await res.json(); } catch { return {}; }
+  } catch (e) {
+    clearTimeout(tid);
+    if (retries > 0 && e.name !== 'AbortError') {
+      await sleep(600);
+      return fetchJson(path, { method, body, timeout, retries: retries - 1 });
+    }
+    throw new Error(e.name === 'AbortError' ? 'Timeout kết nối' : (e.message || 'Không thể kết nối server'));
+  }
+}
+
+/* ═══════════════ API ═══════════════ */
+const apiSession  = ()          => fetchJson('/session', { timeout: 6000, retries: 1 });
+const apiLogin    = (u, p)      => fetchJson('/login', { method: 'POST', body: { username: u, password: p } });
+const apiLogout   = ()          => fetchJson('/logout', { method: 'POST' }).catch(() => {});
+const apiKeys     = (pg, ps)    => fetchJson(`/keys?page=${pg}&page_size=${ps}`, { timeout: 15000, retries: 1 });
+const apiCreate   = (d)         => fetchJson('/createkey', { method: 'POST', body: d });
+const apiBan      = (key)       => fetchJson('/ban',       { method: 'POST', body: { key } });
+const apiUnban    = (key)       => fetchJson('/unban',     { method: 'POST', body: { key } });
+const apiDelete   = (key)       => fetchJson('/deletekey', { method: 'POST', body: { key } });
+
+/* ═══════════════ NET UI ═══════════════ */
+function setNetUI() {
+  const on = navigator.onLine;
+  $('#netDot').style.background = on ? 'var(--green)' : 'var(--red)';
+  $('#netTxt').textContent = on ? 'ONLINE' : 'OFFLINE';
+  $('#syncTxt').textContent = LAST_SYNC ? `• sync ${LAST_SYNC}` : '';
+}
+window.addEventListener('online',  setNetUI);
+window.addEventListener('offline', setNetUI);
+
+/* ═══════════════ AUTH UI ═══════════════ */
+function setAuthUI(ok) {
+  AUTH = ok;
+  const badge = $('#authBadge');
+  badge.textContent = ok ? '✓ Đã đăng nhập' : 'Chưa đăng nhập';
+  badge.className = 'status-pill ' + (ok ? 'ok' : 'warn');
+  [ok ? show : hide].forEach(fn => fn);
+  $$('#btnCreate, #sideCreate, #sideLogout, #topLogout').forEach(ok ? show : hide);
+  $$('#sideLogin, #topLogin').forEach(ok ? hide : show);
+}
+
+async function checkSession() {
+  try { const r = await apiSession(); setAuthUI(!!r.logged_in); }
+  catch { setAuthUI(false); }
+}
+
+/* ═══════════════ LOGIN ═══════════════ */
+let _loginBusy = false;
+function openLogin() { $('#loginOverlay').classList.add('open'); $('#loginUser').focus(); }
+function closeLogin() { $('#loginOverlay').classList.remove('open'); }
+
+async function doLogin() {
+  if (_loginBusy) return;
+  const u = $('#loginUser').value.trim(), p = $('#loginPass').value;
+  hide($('#loginErr'));
+  if (!u || !p) { showLoginErr('Vui lòng nhập đủ thông tin'); return; }
+  _loginBusy = true; $('#btnLogin').disabled = true;
+  $('#loginSpinnerTxt').textContent = 'Đang đăng nhập…';
+  try {
+    await apiLogin(u, p);
+    closeLogin(); setAuthUI(true); toast('Đăng nhập thành công', 'success'); await load();
+  } catch (e) {
+    showLoginErr(e.message || 'Sai tài khoản hoặc mật khẩu');
+  } finally {
+    _loginBusy = false; $('#btnLogin').disabled = false;
+    $('#loginSpinnerTxt').textContent = 'Đăng nhập';
+  }
+}
+function showLoginErr(msg) { const el = $('#loginErr'); el.textContent = msg; show(el); }
+
+async function doLogout() {
+  await apiLogout(); setAuthUI(false); toast('Đã đăng xuất', 'success'); await load();
+}
+
+/* ═══════════════ TABS ═══════════════ */
+function switchTab(tab) {
+  $$('#tabKeys, #tabBulk').forEach(hide);
+  $$('#navKeys, #navBulk').forEach(b => b.classList.remove('active'));
+  if (tab === 'keys') {
+    show($('#tabKeys')); $('#navKeys').classList.add('active');
+    $('#pageTitle').textContent = 'Quản lý Keys'; load();
+  } else {
+    show($('#tabBulk')); $('#navBulk').classList.add('active');
+    $('#pageTitle').textContent = 'Tạo Key Hàng Loạt';
+  }
+}
+
+/* ═══════════════ FORMAT STATUS ═══════════════ */
+function fmtStatus(row) {
+  if (row.is_banned) return { label: 'BANNED', cls: 'banned' };
+  const s = row.status_text || '';
+  if (s === 'Đang hoạt động') return { label: 'ACTIVE', cls: 'active' };
+  if (s === 'Hết Hạn') return { label: 'Hết hạn', cls: 'expired' };
+  return { label: 'Chưa KH', cls: 'pending' };
+}
+
+/* ═══════════════ KPI ═══════════════ */
+function renderKPIs(arr) {
+  const setV = (id, v) => { const el = $(id); el.textContent = v; el.classList.remove('skel'); el.style.cssText = ''; };
+  setV('#kpiTotal',   arr.length);
+  setV('#kpiActive',  arr.filter(x => !x.is_banned && x.status_text === 'Đang hoạt động').length);
+  setV('#kpiExpired', arr.filter(x => x.status_text === 'Hết Hạn').length);
+  setV('#kpiBanned',  arr.filter(x => x.is_banned).length);
+}
+
+/* ═══════════════ SKELETON ═══════════════ */
+function skeletonRows(n) {
+  const body = $('#tbody'); body.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const tr = document.createElement('tr');
+    for (let j = 0; j < 9; j++) {
+      const td = document.createElement('td');
+      const sk = document.createElement('div');
+      sk.className = 'skel'; sk.style.cssText = `height:14px;width:${[14,26,180,110,130,100,90,70,100][j]||80}px`;
+      td.appendChild(sk); tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+}
+
+/* ═══════════════ FILTER & SORT ═══════════════ */
+function applyFilters(arr) {
+  const q = $('#qSearch').value.toLowerCase().trim();
+  const s = $('#fStatus').value;
+  return arr.filter(x => {
+    const hay = [x.key_string, x.hwid, x.ip_address, x.created_by, x.status_text].map(v => String(v || '')).join(' ').toLowerCase();
+    const passQ = !q || hay.includes(q);
+    const norm = x.is_banned ? 'BANNED' : (x.status_text === 'Đang hoạt động' ? 'ACTIVE' : (x.status_text || ''));
+    const isPending = !x.is_banned && x.status_text !== 'Hết Hạn' && x.status_text !== 'Đang hoạt động';
+    const passS = !s || (s === 'Chưa kích hoạt' ? isPending : (norm === s || x.status_text === s));
+    return passQ && passS;
+  });
+}
+
+function sortData(arr) {
+  const { key, dir } = SORT; const mul = dir === 'asc' ? 1 : -1;
+  return arr.slice().sort((a, b) => {
+    const va = key === 'rank' ? (a.__rank || 0) : key === 'status' ? fmtStatus(a).label : (a[key] ?? '');
+    const vb = key === 'rank' ? (b.__rank || 0) : key === 'status' ? fmtStatus(b).label : (b[key] ?? '');
+    if (key === 'expires_at') return (new Date(va||0) - new Date(vb||0)) * mul;
+    return String(va).localeCompare(String(vb)) * mul;
+  });
+}
+
+/* ═══════════════ RENDER TABLE ═══════════════ */
+function render() {
+  const body = $('#tbody'); body.innerHTML = '';
+  const filtered = applyFilters(DATA), sorted = sortData(filtered);
+  const pages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  PAGE = Math.min(Math.max(1, PAGE), pages);
+  const view = sorted.slice((PAGE - 1) * PAGE_SIZE, PAGE * PAGE_SIZE);
+
+  if (!view.length) {
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Không có dữ liệu</td></tr>`;
+  }
+
+  for (const k of view) {
+    const tr = document.createElement('tr');
+    const st = fmtStatus(k);
+
+    // Checkbox
+    const tdCb = document.createElement('td');
+    const cb = document.createElement('input'); cb.type = 'checkbox';
+    cb.checked = SELECTED.has(k.key_string);
+    cb.addEventListener('change', e => { SELECTED[e.target.checked ? 'add' : 'delete'](k.key_string); updateBulkBar(); });
+    tdCb.appendChild(cb); tr.appendChild(tdCb);
+
+    tr.insertCell().textContent = k.__rank ?? '-';
+
+    // Key string
+    const tdKey = tr.insertCell();
+    tdKey.innerHTML = `<span class="mono">${k.key_string || ''}</span>`;
+
+    // Expires
+    const tdExp = tr.insertCell();
+    tdExp.innerHTML = `<span class="mono" style="font-size:11px">${k.expires_at || '—'}</span>`;
+
+    // HWID
+    const tdH = tr.insertCell();
+    if (k.hwid && k.hwid !== 'Chưa đăng ký') {
+      const short = k.hwid.length > 14 ? k.hwid.slice(0, 14) + '…' : k.hwid;
+      tdH.innerHTML = `<span class="mono" title="${k.hwid}">${short}</span> <button class="btn xs" onclick="copyText('${k.hwid}','HWID')">⧉</button>`;
+    } else {
+      tdH.innerHTML = `<span style="color:var(--dim);font-size:11px">—</span>`;
+    }
+
+    // IP
+    const tdIP = tr.insertCell();
+    if (k.ip_address && k.ip_address !== 'N/A') {
+      tdIP.innerHTML = `<span class="mono">${k.ip_address}</span> <button class="btn xs" onclick="copyText('${k.ip_address}','IP')">⧉</button>`;
+    } else {
+      tdIP.innerHTML = `<span style="color:var(--dim);font-size:11px">—</span>`;
+    }
+
+    tr.insertCell().textContent = k.created_by || '—';
+
+    // Status
+    const tdS = tr.insertCell();
+    tdS.innerHTML = `<span class="chip ${st.cls}">${st.label}</span>`;
+
+    // Actions
+    const tdAct = tr.insertCell(); tdAct.style.textAlign = 'right';
+    tdAct.innerHTML = `<div class="action-row" style="justify-content:flex-end">
+      ${k.is_banned
+        ? `<button class="btn xs" style="color:var(--green)" onclick="doUnban('${k.key_string}')">✅ Unban</button>`
+        : `<button class="btn danger xs" onclick="doBan('${k.key_string}')">🚫 Ban</button>`}
+      <button class="btn danger xs" onclick="doDelete('${k.key_string}')">🗑</button>
+      <button class="btn xs" onclick="copyText('${k.key_string}','Key')">📋</button>
+    </div>`;
+
+    body.appendChild(tr);
+  }
+
+  $('#pageInfo').textContent = `Trang ${PAGE}/${pages} • ${filtered.length} keys`;
+  $('#btnPrev').disabled = PAGE <= 1;
+  $('#btnNext').disabled = PAGE >= pages;
+  renderKPIs(DATA);
+  updateBulkBar();
+}
+
+/* ═══════════════ LOAD DATA ═══════════════ */
+async function load() {
+  skeletonRows(8);
+  try {
+    const res = await apiKeys(1, 800);
+    const list = Array.isArray(res.items) ? res.items : (Array.isArray(res) ? res : []);
+    DATA = list.map((x, i) => ({ ...x, __rank: i + 1 }));
+    LAST_SYNC = nowStr(); setNetUI();
+    PAGE = 1; SELECTED.clear();
+    render();
+  } catch (e) {
+    $('#tbody').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--red)">Lỗi: ${e.message}</td></tr>`;
+    toast('Tải dữ liệu thất bại', 'error');
+  }
+}
+
+/* ═══════════════ BULK BAR ═══════════════ */
+function updateBulkBar() {
+  const c = SELECTED.size;
+  if (c > 0) { show($('#bulkBar')); $('#bulkCount').textContent = c; }
+  else hide($('#bulkBar'));
+  const hcb = $('#headerCb');
+  const all = $$('tbody input[type=checkbox]');
+  hcb.checked = all.length > 0 && all.every(cb => cb.checked);
+  hcb.indeterminate = !hcb.checked && all.some(cb => cb.checked);
+}
+
+async function bulkAction(action) {
+  if (SELECTED.size === 0) { toast('Chọn ít nhất 1 key', 'warn'); return; }
+  const keys = [...SELECTED];
+  const verb = { ban: 'ban', unban: 'unban', delete: 'xóa' }[action];
+  confirmBox(`Xác nhận ${verb} hàng loạt`, `Bạn muốn ${verb} ${keys.length} key đã chọn?`, async () => {
+    let ok = 0;
+    for (const k of keys) {
+      try {
+        if (action === 'ban')    await apiBan(k);
+        if (action === 'unban')  await apiUnban(k);
+        if (action === 'delete') await apiDelete(k);
+        ok++;
+      } catch {}
+    }
+    toast(`Đã ${verb} ${ok}/${keys.length} key`, 'success');
+    SELECTED.clear(); await load();
+  });
+}
+
+/* ═══════════════ SINGLE ACTIONS ═══════════════ */
+async function doBan(key)    { try { await apiBan(key);    toast('Đã ban key', 'success'); await load(); } catch(e) { toast(e.message, 'error'); } }
+async function doUnban(key)  { try { await apiUnban(key);  toast('Đã unban key', 'success'); await load(); } catch(e) { toast(e.message, 'error'); } }
+async function doDelete(key) { confirmBox('Xóa key', `Xóa vĩnh viễn: ${key}?`, async () => { try { await apiDelete(key); toast('Đã xóa', 'success'); await load(); } catch(e) { toast(e.message, 'error'); } }); }
+async function copyText(txt, label) { await navigator.clipboard.writeText(txt); toast(`Đã copy ${label}`, 'success'); }
+
+/* ═══════════════ CONFIRM BOX ═══════════════ */
+function confirmBox(title, msg, yes) {
+  $('#cfTitle').textContent = title; $('#cfMsg').textContent = msg;
+  $('#mConfirm').classList.add('open');
+  const onYes = () => { $('#mConfirm').classList.remove('open'); yes && yes(); $('#cfYes').removeEventListener('click', onYes); };
+  $('#cfYes').addEventListener('click', onYes, { once: true });
+}
+
+/* ═══════════════ CREATE KEY (SINGLE) ═══════════════ */
+function openCreate() { if (!AUTH) { openLogin(); return; } $('#mCreate').classList.add('open'); }
+function closeCreate() { $('#mCreate').classList.remove('open'); }
+
+async function createSingle() {
+  if (!AUTH) { openLogin(); return; }
+  const days = parseInt($('#cDays').value) || 0;
+  const type = $('#cType').value;
+  const created_by = $('#cCreator').value.trim() || 'AdminPanel';
+  const note = $('#cNote').value.trim();
+  if (days <= 0) { toast('Số ngày không hợp lệ', 'error'); return; }
+  $('#cSubmit').disabled = true; $('#cSubmit').textContent = 'Đang tạo…';
+  try {
+    const r = await apiCreate({ days, key_type: type, created_by, note });
+    toast(`✓ Tạo thành công: ${r.key || ''}`, 'success'); closeCreate(); await load();
+  } catch (e) { toast(e.message, 'error'); }
+  finally { $('#cSubmit').disabled = false; $('#cSubmit').textContent = 'Tạo Key'; }
+}
+
+/* ═══════════════ BULK CREATE ═══════════════ */
+let _bulkKeys = [];
+
+function getFmt() { return $$('input[name=fmt]').find(r => r.checked)?.value || 'plain'; }
+
+function renderKeyList() {
+  const fmt = getFmt();
+  const el = $('#keyList');
+  if (!_bulkKeys.length) { el.innerHTML = '<span style="color:var(--dim);font-size:12px">// Key được tạo sẽ hiện ở đây…</span>'; return; }
+  let html = '';
+  if (fmt === 'discord') {
+    html = `<span style="color:var(--dim)">` + '```' + `</span>\n` + _bulkKeys.join('\n') + `\n<span style="color:var(--dim)">` + '```' + `</span>`;
+  } else {
+    _bulkKeys.forEach((k, i) => {
+      const label = fmt === 'numbered' ? `<span class="idx">${i + 1}.</span> ` : '';
+      html += `<div class="key-line">${label}<span class="kk">${k}</span><span class="cp" onclick="copyText('${k}','Key')">copy</span></div>`;
+    });
+  }
+  el.innerHTML = html;
+  $('#fResultTitle').textContent = `Kết quả — ${_bulkKeys.length} key`;
+}
+
+async function doBulkCreate() {
+  if (!AUTH) { openLogin(); return; }
+  const qty = Math.min(parseInt($('#fQty').value) || 0, 500);
+  const days = parseInt($('#fDays').value) || 0;
+  const ktype = $('#fKtype').value;
+  const creator = $('#fCreator').value.trim() || 'Free-Share';
+  const note = $('#fNote').value.trim();
+  if (qty <= 0) { toast('Số lượng không hợp lệ', 'error'); return; }
+  if (days <= 0) { toast('Số ngày không hợp lệ', 'error'); return; }
+
+  _bulkKeys = []; _stopBulk = false; _sessCreated = 0; _sessErr = 0;
+  $('#sessCreated').textContent = '0'; $('#sessErr').textContent = '0';
+  renderKeyList();
+
+  show($('#progressWrap')); show($('#fStop')); $('#fSubmit').disabled = true;
+  $('#progressBar').style.width = '0%';
+  $('#progressLabel').textContent = `Đang tạo 0/${qty}…`;
+
+  for (let i = 0; i < qty; i++) {
+    if (_stopBulk) { toast(`Đã dừng. Tạo được ${_sessCreated} key.`, 'warn'); break; }
+    try {
+      const r = await apiCreate({ days, key_type: ktype, created_by: creator, note });
+      if (r.key) {
+        _bulkKeys.push(r.key); _sessCreated++;
+        $('#sessCreated').textContent = _sessCreated;
+      }
+    } catch (e) {
+      _sessErr++; $('#sessErr').textContent = _sessErr;
+      console.warn('Bulk create err:', e.message);
+    }
+    const pct = Math.round(((i + 1) / qty) * 100);
+    $('#progressBar').style.width = pct + '%';
+    $('#progressLabel').textContent = `Đang tạo ${i + 1}/${qty}…`;
+    renderKeyList();
+    await sleep(80); // nhỏ delay để tránh rate limit
+  }
+
+  hide($('#progressWrap')); hide($('#fStop')); $('#fSubmit').disabled = false;
+  if (!_stopBulk) {
+    $('#progressLabel').textContent = `Hoàn thành: ${_sessCreated} key`;
+    toast(`✓ Tạo xong ${_sessCreated} key`, 'success');
+  }
+  renderKeyList();
+}
+
+function getBulkText() {
+  const fmt = getFmt();
+  if (!_bulkKeys.length) return '';
+  if (fmt === 'discord') return '```\n' + _bulkKeys.join('\n') + '\n```';
+  if (fmt === 'numbered') return _bulkKeys.map((k, i) => `${i + 1}. ${k}`).join('\n');
+  return _bulkKeys.join('\n');
+}
+
+/* ═══════════════ EXPORT CSV ═══════════════ */
+function exportCSV() {
+  const rows = applyFilters(DATA);
+  if (!rows.length) { toast('Không có dữ liệu', 'warn'); return; }
+  const header = ['#', 'Key', 'Hạn', 'HWID', 'IP', 'Người tạo', 'Trạng thái'];
+  const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const lines = [header.join(','), ...rows.map(r => [
+    r.__rank, r.key_string, r.expires_at, r.hwid, r.ip_address, r.created_by, fmtStatus(r).label
+  ].map(esc).join(','))];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `aimx-keys-${Date.now()}.csv`; a.click();
+  toast('Đã xuất CSV', 'success');
+}
+
+/* ═══════════════ SORT HEADERS ═══════════════ */
+$$('thead th.sort').forEach(th => th.addEventListener('click', () => {
+  const k = th.dataset.sort;
+  SORT = { key: k, dir: SORT.key === k && SORT.dir === 'asc' ? 'desc' : 'asc' };
+  render();
+}));
+
+/* ═══════════════ EVENTS ═══════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  setNetUI();
+
+  // Auth
+  $('#topLogin').onclick  = openLogin;
+  $('#sideLogin').onclick = openLogin;
+  $('#topLogout').onclick = doLogout;
+  $('#sideLogout').onclick = doLogout;
+  $('#btnLogin').onclick   = doLogin;
+  $('#btnCloseLogin').onclick = closeLogin;
+  $('#loginPass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+  $('#loginOverlay').addEventListener('click', e => { if (e.target === $('#loginOverlay')) closeLogin(); });
+
+  // Nav
+  $('#navKeys').onclick  = () => switchTab('keys');
+  $('#navBulk').onclick  = () => switchTab('bulk');
+  $('#navActivity').onclick = () => toast('Tính năng đang phát triển', 'warn');
+
+  // Sidebar actions
+  $('#sideReload').onclick = load;
+  $('#sideCreate').onclick = openCreate;
+  $('#sideClear').onclick  = async () => {
+    try {
+      localStorage.clear(); sessionStorage.clear();
+      if ('caches' in window) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); }
+      await apiLogout();
+    } catch {}
+    toast('Đã clear cache & đăng xuất', 'success');
+    await checkSession(); render();
+  };
+
+  // Table controls
+  $('#btnCreate').onclick  = openCreate;
+  $('#btnReload2').onclick = load;
+  $('#btnExport').onclick  = exportCSV;
+  $('#btnPrev').onclick    = () => { PAGE--; render(); };
+  $('#btnNext').onclick    = () => { PAGE++; render(); };
+  $('#qSearch').oninput    = debounce(() => { PAGE = 1; render(); }, 220);
+  $('#fStatus').onchange   = () => { PAGE = 1; render(); };
+  $('#pageSize').onchange  = () => { PAGE_SIZE = +($('#pageSize').value) || 15; PAGE = 1; render(); };
+
+  // Header checkbox
+  $('#headerCb').onchange = e => {
+    const view = applyFilters(DATA).slice((PAGE - 1) * PAGE_SIZE, PAGE * PAGE_SIZE);
+    view.forEach(k => e.target.checked ? SELECTED.add(k.key_string) : SELECTED.delete(k.key_string));
+    render();
+  };
+
+  // Bulk bar
+  $('#btnBulkBan').onclick    = () => bulkAction('ban');
+  $('#btnBulkUnban').onclick  = () => bulkAction('unban');
+  $('#btnBulkDelete').onclick = () => bulkAction('delete');
+  $('#btnDeselect').onclick   = () => { SELECTED.clear(); render(); };
+
+  // Single create modal
+  $('#cSubmit').onclick = createSingle;
+  $$('[data-close-create]').forEach(b => b.onclick = closeCreate);
+  $('#mCreate').addEventListener('click', e => { if (e.target === $('#mCreate')) closeCreate(); });
+
+  // Confirm modal
+  $$('[data-close-confirm]').forEach(b => b.onclick = () => $('#mConfirm').classList.remove('open'));
+  $('#mConfirm').addEventListener('click', e => { if (e.target === $('#mConfirm')) $('#mConfirm').classList.remove('open'); });
+
+  // Bulk tab
+  $('#fSubmit').onclick  = doBulkCreate;
+  $('#fStop').onclick    = () => { _stopBulk = true; };
+  $('#fCopy').onclick    = async () => { const t = getBulkText(); if (!t) { toast('Chưa có key', 'warn'); return; } await navigator.clipboard.writeText(t); toast('Đã copy tất cả key', 'success'); };
+  $('#fDownload').onclick = () => {
+    const t = getBulkText(); if (!t) { toast('Chưa có key', 'warn'); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));
+    a.download = `aimx-free-keys-${Date.now()}.txt`; a.click();
+    toast('Đã tải file .txt', 'success');
+  };
+  $('#fClear').onclick = () => { _bulkKeys = []; renderKeyList(); $('#fResultTitle').textContent = 'Kết quả'; };
+  $$('input[name=fmt]').forEach(r => r.addEventListener('change', renderKeyList));
+
+  // Init
+  await checkSession();
+  switchTab('keys');
+});
+</script>
+</body>
+</html>
