@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ND Key Admin • v5.1</title>
+  <meta name="color-scheme" content="dark">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0e13; --bg2:#0d131a; --panel:#0e151e; --panel-2:#121b27;
+      --text:#eef3fb; --muted:#9fb0c6; --border:#243142; --border-2:#2a3a4f;
+      --primary:#22c55e; --primary-2:#19924a;
+      --info:#3b82f6; --warn:#facc15; --danger:#ef4444;
+      --radius:14px; --radius-sm:10px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --glow: 0 0 0 1px #1b2a3d, 0 0 30px rgba(59,130,246,.12) inset;
+      --transition: all 0.2s ease;
+    }
+    *{box-sizing:border-box; transition: var(--transition);}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+      background:
+        radial-gradient(900px 400px at 5% 0%, rgba(59,130,246,.12), transparent 60%),
+        radial-gradient(600px 320px at 95% 10%, rgba(34,197,94,.10), transparent 60%),
+        linear-gradient(180deg, #0b0f14, #090d12 40%, #070a0e);
+    }
+
+    /* Layout */
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    @media(max-width:980px){.app{grid-template-columns:1fr}}
+    .sidebar{
+      position:sticky; top:0; height:100vh; padding:16px;
+      background:linear-gradient(180deg, var(--bg2), #0a0f16);
+      border-right:1px solid var(--border); box-shadow: var(--shadow);
+    }
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800}
+    .brand .dot{width:10px;height:10px;border-radius:999px;background:conic-gradient(#22c55e,#3b82f6,#a78bfa,#22c55e); animation: spin 2s linear infinite;}
+    @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}}
+    .side-sec{margin-top:16px}
+    .nav-btn{
+      width:100%; display:flex; align-items:center; gap:10px;
+      background:var(--panel); border:1px solid var(--border); color:var(--text);
+      padding:10px 12px; border-radius:12px; margin-bottom:8px; cursor:pointer;
+      transition:.15s border-color ease, .15s transform ease, .15s background ease;
+    }
+    .nav-btn:hover{border-color:var(--info); transform:translateY(-1px); background:var(--panel-2)}
+    .nav-btn.danger{background:linear-gradient(180deg,#ef4444,#dc2626); border-color:#b91c1c}
+    .nav-btn.active{border-color:var(--primary); background:var(--panel-2); transform:translateY(-1px)}
+    .muted{color:var(--muted)}
+
+    .topbar{
+      position:sticky; top:0; z-index:5;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 16px; background:linear-gradient(180deg,var(--bg2),#0b1118);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:saturate(130%) blur(6px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media(max-width:980px){.kpi{grid-template-columns:1fr 1fr}}
+    @media(max-width:520px){.kpi{grid-template-columns:1fr}}
+
+    .container{padding:16px;max-width:1400px;margin:0 auto}
+
+    .card{
+      background:linear-gradient(180deg,var(--panel),var(--panel-2));
+      border:1px solid var(--border-2); border-radius:var(--radius); padding:14px;
+      box-shadow: var(--glow), 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover{transform: translateY(-2px); box-shadow: var(--glow), 0 6px 18px rgba(0,0,0,0.15);}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{
+      border:1px solid var(--border); background:var(--panel); color:var(--text);
+      padding:8px 12px; border-radius:10px; cursor:pointer; transition:.15s transform ease,.15s border-color ease,.15s opacity ease, .15s background ease;
+      font-size:13px; font-weight:600;
+    }
+    .btn:hover{transform:translateY(-1px); border-color:#355174; background:var(--panel-2)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn.primary{background:linear-gradient(180deg,#22c55e,#19924a); border-color:#178e43; color:#06160c}
+    .btn.primary:hover{background:linear-gradient(180deg,#1fb34f,#178e43)}
+    .btn.info{background:linear-gradient(180deg,#3b82f6,#2563eb); border-color:#2158d1; color:#071225}
+    .btn.info:hover{background:linear-gradient(180deg,#3b82f6,#1d4ed8)}
+    .btn.warn{background:linear-gradient(180deg,#facc15,#eab308); border-color:#a16207; color:#1f1b00}
+    .btn.warn:hover{background:linear-gradient(180deg,#facc15,#ca8a04)}
+    .btn.danger{background:linear-gradient(180deg,#ef4444,#dc2626); border-color:#b91c1c; color:#fff}
+    .btn.danger:hover{background:linear-gradient(180deg,#ef4444,#b91c1c)}
+    .btn.small{padding:6px 10px; font-size:12px;}
+
+    .input,.select{
+      background:#0b1219;border:1px solid var(--border);color:var(--text);
+      padding:10px 12px;border-radius:10px;min-height:40px;width:100%;
+      transition:.15s outline ease,.15s border-color ease,.15s background ease;
+    }
+    .input:focus,.select:focus{outline:2px solid #3b82f680;border-color:#3b82f6; background:#0d141b}
+    .input[readonly]{opacity:.8}
+
+    /* Bulk Actions */
+    .bulk-actions{
+      display:flex; align-items:center; gap:8px; padding:10px 0; margin-bottom:10px;
+      border-bottom:1px solid var(--border);
+      background:var(--panel); border-radius:var(--radius-sm); padding:8px 12px;
+    }
+    .bulk-actions .selected-count{
+      background:var(--info); color:white; padding:4px 8px; border-radius:6px;
+      font-size:12px; font-weight:600;
+    }
+
+    /* Table */
+    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px; box-shadow: var(--glow)}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{
+      position:sticky;top:0;background:#101827;border-bottom:1px solid var(--border);
+      padding:10px 12px;text-align:left;font-weight:700;color:#cfe0ff;z-index:1;white-space:nowrap;
+      user-select:none; cursor:default;
+    }
+    thead th.sortable{cursor:pointer}
+    thead th.sortable:hover{color:#fff; background:#121b27}
+    tbody td{border-top:1px solid var(--border);padding:10px 12px;vertical-align:middle;white-space:nowrap}
+    tbody tr:nth-child(even){background:#0d131a}
+    tbody tr:hover{background:#0f141b; transform: translateY(-1px);}
+    .sticky-left{position:sticky;left:0;background:#101827;z-index:2;border-right:1px solid var(--border)}
+    .sticky-checkbox{position:sticky;left:0;background:#101827;z-index:3;border-right:1px solid var(--border)}
+    
+    .chip{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--border);display:inline-block; transition: transform 0.2s;}
+    .chip:hover{transform: scale(1.05);}
+    .chip.active{background:#0a2e19;border-color:#1d7a40;color:#a7f3c6}
+    .chip.expired{background:#2a0f0f;border-color:#7a1d1d;color:#ffc9c9}
+    .chip.banned{background:#2a0f19;border-color:#7a1d39;color:#ffc9d6}
+    .chip.pending{background:#2a210b;border-color:#7a621d;color:#ffe6a7}
+
+    /* Checkbox */
+    .checkbox-container{
+      display:flex; align-items:center; gap:8px; cursor:pointer;
+      padding:4px 8px; border-radius:6px; transition:background 0.2s;
+    }
+    .checkbox-container:hover{background:var(--panel-2)}
+    .checkbox-container input[type="checkbox"]{
+      width:16px; height:16px; cursor:pointer;
+      accent-color: var(--primary);
+    }
+
+    /* Action Buttons */
+    .action-buttons{
+      display:flex; gap:4px; flex-wrap:wrap;
+    }
+    .action-btn{
+      padding:4px 8px; border-radius:6px; border:1px solid var(--border);
+      background:var(--panel); color:var(--text); cursor:pointer;
+      font-size:11px; font-weight:600; transition:all 0.2s;
+    }
+    .action-btn:hover{transform:translateY(-1px); border-color:var(--info); background:var(--panel-2)}
+    .action-btn.ban{background:#7a1d1d; border-color:#b91c1c; color:#ffc9c9}
+    .action-btn.unban{background:#1d7a40; border-color:#178e43; color:#a7f3c6}
+    .action-btn.delete{background:#7a1d39; border-color:#b91c3c; color:#ffc9d6}
+    .action-btn.copy{background:#1d4e7a; border-color:#2158d1; color:#c9e0ff}
+    .action-btn.stats{background:#7a621d; border-color:#a16207; color:#ffe8a6}
+
+    /* Skeleton */
+    .skeleton{position:relative;overflow:hidden;background:#0e141c;border-radius:8px}
+    .skeleton::after{
+      content:""; position:absolute; inset:0;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+      transform:translateX(-100%); animation:shimmer 1.2s infinite;
+    }
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+
+    /* Modals & Toast */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:30; backdrop-filter: blur(4px);}
+    .modal{background:#0f141b;border:1px solid var(--border);border-radius:16px;max-width:560px;width:100%;box-shadow:var(--shadow); transform: scale(0.95); transition: transform 0.3s ease;}
+    .modal-bg[style*="display: flex"] .modal{transform: scale(1);}
+    .modal .head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+    .modal .body{padding:16px}
+    .modal .foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+    #toast{position:fixed;right:16px;bottom:16px;display:none;z-index:40; transform: translateY(20px); transition: transform 0.3s, opacity 0.3s;}
+    #toast[style*="display: block"]{transform: translateY(0);}
+    #toast .inner{background:#0f141b;border:1px solid var(--border);border-left:4px solid var(--info);padding:10px 12px;border-radius:10px;min-width:240px;box-shadow:var(--shadow)}
+
+    /* Login overlay */
+    #loginOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:radial-gradient(800px 400px at 10% 5%,rgba(59,130,246,.15),transparent),rgba(0,0,0,.55);z-index:40; backdrop-filter: blur(4px);}
+    .login-card{background:#0f141b;border:1px solid var(--border);border-radius:16px;padding:18px;max-width:420px;width:100%;box-shadow:var(--shadow); transform: scale(0.95); transition: transform 0.3s;}
+    #loginOverlay[style*="display: flex"] .login-card{transform: scale(1);}
+
+    /* Status bar (network/offline) */
+    .statusbar{
+      position:fixed;left:16px;bottom:16px;z-index:45;
+      background:#0e151e;border:1px solid var(--border);border-radius:12px;padding:8px 10px;
+      display:flex;align-items:center;gap:8px;box-shadow:var(--shadow)
+    }
+
+    .badge{padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:12px}
+    .badge.ok{background:#092315;color:#bff3cd;border-color:#155e34}
+    .badge.err{background:#2a0f0f;color:#ffc3c3;border-color:#7a1d1d}
+    .badge.warn{background:#2a210b;color:#ffe8a6;border-color:#7a621d}
+    .hidden{display:none !important}
+
+    /* Free Key Tab */
+    #freeContainer{padding:16px;max-width:1400px;margin:0 auto}
+    #freeForm .row{margin-bottom:12px;}
+    #freeResult{margin-top:20px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
+    #freeKeys{width:100%; height:300px; background:#0b1219; border:1px solid var(--border); border-radius:10px; color:var(--text); padding:10px; font-family: monospace; white-space: pre-wrap; overflow:auto;}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand"><span class="dot"></span><span>ND Key Admin</span></div>
+      <div class="side-sec">
+        <button id="navKeys" class="nav-btn active">🔑 Keys</button>
+        <button id="navFree" class="nav-btn">🎁 Tạo Key Free</button>
+        <button id="navActivity" class="nav-btn">📊 Nhật ký</button>
+      </div>
+      <div class="side-sec">
+        <button id="btnCreate" class="nav-btn hidden">➕ Tạo Key</button>
+        <button id="btnReload" class="nav-btn">⟳ Tải lại</button>
+        <button id="btnLogout" class="nav-btn danger hidden">Đăng xuất</button>
+      </div>
+      <div class="muted" style="margin-top:14px;font-size:12px">UI v5.1 • Enhanced Design</div>
+    </aside>
+
+    <!-- Main -->
+    <div>
+      <div class="topbar">
+        <div class="row" style="align-items:center">
+          <strong style="font-size:18px" id="dashboardTitle">Dashboard</strong>
+          <span id="authState" class="badge warn">Chưa đăng nhập</span>
+        </div>
+        <div class="row">
+          <button id="btnClear" class="btn warn">🧹 Clear Site</button>
+          <button id="btnLoginTop" class="btn info">Đăng nhập</button>
+          <button id="btnLogoutTop" class="btn danger hidden">Đăng xuất</button>
+        </div>
+      </div>
+
+      <!-- Keys Container -->
+      <div id="keysContainer" class="container">
+        <!-- KPIs -->
+        <div class="kpi" style="margin-bottom:12px">
+          <div class="card">
+            <div class="muted">Tổng Key</div>
+            <div id="kpiTotal" style="font-weight:800;font-size:22px;margin-top:6px" class="skeleton">&nbsp;</div>
+          </div>
+          <div class="card">
+            <div class="muted">Đang hoạt động</div>
+            <div id="kpiActive" style="font-weight:800;font-size:22px;margin-top:6px" class="skeleton">&nbsp;</div>
+          </div>
+          <div class="card">
+            <div class="muted">Hết hạn</div>
+            <div id="kpiExpired" style="font-weight:800;font-size:22px;margin-top:6px" class="skeleton">&nbsp;</div>
+          </div>
+          <div class="card">
+            <div class="muted">BANNED</div>
+            <div id="kpiBanned" style="font-weight:800;font-size:22px;margin-top:6px" class="skeleton">&nbsp;</div>
+          </div>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div id="bulkActions" class="bulk-actions hidden">
+          <div class="checkbox-container">
+            <input type="checkbox" id="selectAll">
+            <label for="selectAll" style="cursor:pointer">Chọn tất cả</label>
+          </div>
+          <span id="selectedCount" class="selected-count">0 được chọn</span>
+          <button id="btnBulkBan" class="btn danger small">🚫 Ban</button>
+          <button id="btnBulkUnban" class="btn primary small">✅ Unban</button>
+          <button id="btnBulkDelete" class="btn danger small">🗑️ Xóa</button>
+          <button id="btnClearSelection" class="btn warn small">❌ Bỏ chọn</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="row">
+            <input id="qSearch" class="input" placeholder="Tìm theo Key / HWID / IP / Người tạo" />
+            <select id="fType" class="select" style="max-width:220px">
+              <option value="">Loại key</option>
+              <option value="single_device">1 Thiết bị</option>
+              <option value="multi_device">Nhiều người dùng</option>
+            </select>
+            <select id="fStatus" class="select" style="max-width:220px">
+              <option value="">Trạng thái</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="Hết Hạn">Hết Hạn</option>
+              <option value="BANNED">BANNED</option>
+              <option value="Chưa kích hoạt">Chưa kích hoạt</option>
+            </select>
+            <select id="pageSize" class="select" style="max-width:140px">
+              <option value="15">15 / trang</option>
+              <option value="30">30 / trang</option>
+              <option value="50">50 / trang</option>
+              <option value="100">100 / trang</option>
+            </select>
+            <div class="row">
+              <button id="openCreate2" class="btn primary hidden">➕ Tạo Key</button>
+              <button id="btnExport" class="btn">⬇ Xuất CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap card">
+          <table id="tbl" aria-label="Danh sách keys">
+            <thead>
+              <tr>
+                <th class="sticky-checkbox" style="width:40px">
+                  <div class="checkbox-container">
+                    <input type="checkbox" id="headerCheckbox">
+                  </div>
+                </th>
+                <th class="sortable" data-sort="rank" style="width:60px">#</th>
+                <th class="sortable" data-sort="key_string" style="min-width:200px">Key</th>
+                <th class="sortable" data-sort="key_type" style="width:120px">Loại</th>
+                <th class="sortable" data-sort="expires_at" style="width:120px">Hạn</th>
+                <th style="width:150px">HWID ĐK</th>
+                <th style="width:120px">IP ĐK</th>
+                <th class="sortable" data-sort="created_by" style="width:120px">Người tạo</th>
+                <th class="sortable" data-sort="status" style="width:100px">Trạng thái</th>
+                <th class="sortable" data-sort="violations" style="width:80px">Vi phạm</th>
+                <th class="sticky-left" style="width:280px">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <!-- skeleton rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row" style="justify-content:space-between;margin-top:10px">
+          <div id="pageInfo" class="muted">Trang 1/1 • 0 keys</div>
+          <div class="row">
+            <button id="prev" class="btn">« Trước</button>
+            <button id="next" class="btn">Tiếp »</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Free Key Container -->
+      <div id="freeContainer" class="container hidden">
+        <div class="card" id="freeForm">
+          <h2 style="margin:0 0 12px 0">Tạo Key Free Hàng Loạt</h2>
+          <div class="row">
+            <label style="flex:1">Số lượng Key
+              <input id="fQuantity" type="number" min="1" value="1" class="input">
+            </label>
+            <label style="flex:1">Ngày sử dụng
+              <input id="fDays" type="number" min="1" value="3" class="input">
+            </label>
+          </div>
+          <div class="row">
+            <label style="flex:1">Loại
+              <select id="fType" class="select">
+                <option value="single_device">1 Thiết bị</option>
+                <option value="multi_device">Nhiều người dùng</option>
+              </select>
+            </label>
+            <label style="flex:1">Người tạo (hiển thị)
+              <input id="fCreator" class="input" value="AdminPanel-Free">
+            </label>
+          </div>
+          <div class="row">
+            <label style="flex:1">Ghi chú (optional)
+              <input id="fNote" class="input" placeholder="Ví dụ: tặng user A">
+            </label>
+          </div>
+          <div class="row" style="justify-content:flex-end">
+            <button id="fSubmit" class="btn primary">Tạo Key Free</button>
+          </div>
+        </div>
+        <div id="freeResult" class="hidden">
+          <h3 style="margin:0 0 8px 0">Danh sách Key Đã Tạo</h3>
+          <textarea id="freeKeys" readonly></textarea>
+          <div class="row" style="margin-top:10px;justify-content:flex-end">
+            <button id="fCopy" class="btn info">📋 Sao chép Tất cả</button>
+            <button id="fClear" class="btn warn">🧹 Xóa Danh sách</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar" id="netBar">
+    <span>Trạng thái mạng:</span>
+    <span id="netBadge" class="badge ok">ONLINE</span>
+    <span id="lastSync" class="muted" style="font-size:12px"></span>
+  </div>
+
+  <!-- Login Overlay -->
+  <div id="loginOverlay">
+    <div class="login-card">
+      <h2 style="margin:0 0 8px 0">Đăng Nhập Admin</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:10px">
+        Phiên đăng nhập sẽ được lưu trong cookie bảo mật. Máy chủ không phản hồi? Hệ thống sẽ tự động thử lại.
+      </div>
+      <div class="row" style="align-items:center">
+        <input id="loginUser" class="input" placeholder="Tài khoản" autocomplete="username" style="flex:1">
+        <input id="loginPass" type="password" class="input" placeholder="Mật khẩu" autocomplete="current-password" style="flex:1">
+      </div>
+      <div class="row" style="margin-top:10px;align-items:center;justify-content:space-between">
+        <div class="row" style="align-items:center;gap:6px">
+          <span id="loginSpinner" class="muted hidden">⏳ Đang gửi…</span>
+          <span id="loginErr" style="color:#ffb4b4" class="hidden"></span>
+        </div>
+        <div class="row">
+          <button id="btnLogin" class="btn info">Đăng nhập</button>
+          <button id="btnCloseLogin" class="btn">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Modal -->
+  <div id="mCreate" class="modal-bg" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="head">
+        <strong>Tạo Key mới</strong>
+        <button class="btn" data-close>Đóng</button>
+      </div>
+      <div class="body">
+        <div class="row">
+          <label style="flex:1">Ngày sử dụng
+            <input id="cDays" type="number" min="1" value="3" class="input">
+          </label>
+          <label style="flex:1">Loại
+            <select id="cType" class="select">
+              <option value="single_device">1 Thiết bị</option>
+              <option value="multi_device">Nhiều người dùng</option>
+            </select>
+          </label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label style="flex:1">Ghi chú (optional)
+            <input id="cNote" class="input" placeholder="Ví dụ: tặng user A">
+          </label>
+          <label style="flex:1">Người tạo (hiển thị)
+            <input id="cCreator" class="input" value="AdminPanel">
+          </label>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn" data-close>Hủy</button>
+        <button id="cSubmit" class="btn primary">Tạo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="mConfirm" class="modal-bg" role="dialog" aria-modal="true">
+    <div class="modal" style="max-width:460px">
+      <div class="head"><strong id="cfTitle">Xác nhận</strong></div>
+      <div class="body" id="cfMsg">Bạn có chắc?</div>
+      <div class="foot">
+        <button class="btn" data-close>Hủy</button>
+        <button id="cfYes" class="btn danger">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="status"><div class="inner" id="toastInner">...</div></div>
+
+  <script>
+    /* =================== CONFIG & STATE =================== */
+    const API_BASE = "https://aovduy-uqpe.onrender.com/api";
+    let AUTH=false, PAGE=1, PAGE_SIZE=15, DATA=[], SORT={key:"rank",dir:"asc"}, LAST_LIST_RAW=[];
+    let LAST_SYNC=null, SELECTED_KEYS=new Set();
+
+    /* =================== UTILS =================== */
+    const $=(s,el=document)=>el.querySelector(s);
+    const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    const show=el=>el.classList.remove('hidden');
+    const hide=el=>el.classList.add('hidden');
+    const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const debounce=(fn,ms=250)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+    const nowStr=()=>new Date().toLocaleString();
+
+    function toast(msg,type="info"){
+      const t=$("#toast"), i=$("#toastInner");
+      i.style.borderLeftColor = type==="success" ? "#22c55e" : type==="error" ? "#ef4444" : type==="warn" ? "#eab308" : "#3b82f6";
+      i.textContent=msg; t.style.display="block"; clearTimeout(window._t);
+      window._t=setTimeout(()=>t.style.display="none",2600);
+    }
+
+    // fetch with timeout + retry + nice errors
+    async function fetchJson(path, {method="GET", body=null, timeout=10000, retries=1, retryDelay=700}={}){
+      const ctl=new AbortController();
+      const id=setTimeout(()=>ctl.abort(), timeout);
+      let res;
+      try{
+        res = await fetch(API_BASE+path, {
+          method,
+          credentials:"include",
+          headers: {"Content-Type":"application/json"},
+          body: body? JSON.stringify(body): null,
+          signal: ctl.signal
+        });
+      }catch(err){
+        clearTimeout(id);
+        if(retries>0){
+          await sleep(retryDelay);
+          return fetchJson(path,{method,body,timeout,retries:retries-1,retryDelay:retryDelay*1.6});
+        }
+        throw new Error("Không thể kết nối máy chủ");
+      }
+      clearTimeout(id);
+      if(!res.ok){
+        let txt=""; try{txt=await res.text()}catch{}
+        const msg = (txt||"Yêu cầu thất bại").replace(/^"|"$/g,"");
+        throw new Error(msg);
+      }
+      try{ return await res.json(); }catch{ return {}; }
+    }
+
+    function formatStatus(row){
+      if(row.is_banned) return {label:"BANNED", cls:"banned"};
+      if(row.status_text==="Hết Hạn") return {label:"Hết Hạn", cls:"expired"};
+      if(row.status_text==="Đang hoạt động") return {label:"ACTIVE", cls:"active"};
+      return {label:"Chưa kích hoạt", cls:"pending"};
+    }
+
+    /* =================== BULK ACTIONS =================== */
+    function updateBulkUI(){
+      const count = SELECTED_KEYS.size;
+      const bulkSection = $("#bulkActions");
+      const selectedCount = $("#selectedCount");
+      
+      if(count > 0){
+        show(bulkSection);
+        selectedCount.textContent = `${count} được chọn`;
+      } else {
+        hide(bulkSection);
+      }
+      
+      // Update select all checkbox
+      const allCheckboxes = $$('input[type="checkbox"][data-key]');
+      const allChecked = allCheckboxes.length > 0 && allCheckboxes.every(cb => cb.checked);
+      $("#selectAll").checked = allChecked;
+      $("#headerCheckbox").checked = allChecked;
+    }
+
+    function selectAllKeys(select){
+      SELECTED_KEYS.clear();
+      if(select){
+        const currentView = getCurrentView();
+        currentView.forEach(row => SELECTED_KEYS.add(row.key_string));
+      }
+      renderCheckboxes();
+      updateBulkUI();
+    }
+
+    function toggleKeySelection(key, selected){
+      if(selected){
+        SELECTED_KEYS.add(key);
+      } else {
+        SELECTED_KEYS.delete(key);
+      }
+      updateBulkUI();
+    }
+
+    function renderCheckboxes(){
+      const checkboxes = $$('input[type="checkbox"][data-key]');
+      checkboxes.forEach(cb => {
+        cb.checked = SELECTED_KEYS.has(cb.dataset.key);
+      });
+    }
+
+    function getCurrentView(){
+      const filtered = applyFilters(DATA);
+      const sorted = sortData(filtered);
+      return sorted.slice((PAGE-1)*PAGE_SIZE,(PAGE-1)*PAGE_SIZE+PAGE_SIZE);
+    }
+
+    async function bulkAction(action){
+      if(SELECTED_KEYS.size === 0){
+        toast("Vui lòng chọn ít nhất một key", "warn");
+        return;
+      }
+
+      const keys = Array.from(SELECTED_KEYS);
+      const actionName = action === 'ban' ? 'ban' : action === 'unban' ? 'unban' : 'delete';
+      const actionText = action === 'ban' ? 'ban' : action === 'unban' ? 'unban' : 'xóa';
+
+      confirmBox(
+        `Xác nhận ${actionText} hàng loạt`,
+        `Bạn có chắc muốn ${actionText} ${keys.length} key đã chọn?`,
+        async () => {
+          try{
+            let successCount = 0;
+            for(const key of keys){
+              try{
+                if(action === 'ban') await apiBan(key);
+                else if(action === 'unban') await apiUnban(key);
+                else if(action === 'delete') await apiDelete(key);
+                successCount++;
+              }catch(e){
+                console.error(`Failed to ${action} key ${key}:`, e);
+              }
+            }
+            toast(`Đã ${actionText} thành công ${successCount}/${keys.length} key`, "success");
+            SELECTED_KEYS.clear();
+            await load();
+          }catch(e){
+            toast(`Lỗi khi ${actionText} hàng loạt: ${e.message}`, "error");
+          }
+        }
+      );
+    }
+
+    /* =================== API WRAPPERS =================== */
+    async function apiSession(){ return fetchJson("/session", {timeout:6000, retries:1}); }
+    async function apiLogout(){ try{await fetchJson("/logout",{method:"POST",timeout:6000})}catch{} }
+    async function apiLogin(username,password){
+      return fetchJson("/login",{method:"POST",body:{username,password},timeout:10000,retries:1});
+    }
+    async function apiListKeys(page=1, pageSize=400){
+      return fetchJson(`/keys?page=${page}&page_size=${pageSize}`, {timeout:12000,retries:1});
+    }
+    async function apiCreateKey({days,type,created_by,note}){
+      return fetchJson("/createkey",{method:"POST",body:{days,key_type:type,created_by,note},timeout:12000});
+    }
+    async function apiBan(key){ return fetchJson("/ban",{method:"POST",body:{key},timeout:8000}); }
+    async function apiUnban(key){ return fetchJson("/unban",{method:"POST",body:{key},timeout:8000}); }
+    async function apiDelete(key){ return fetchJson("/deletekey",{method:"POST",body:{key},timeout:8000}); }
+    async function apiStats(key){ return fetchJson(`/keystats/${encodeURIComponent(key)}?limit=30`, {timeout:8000}); }
+
+    /* =================== AUTH / NET UI =================== */
+    function setAuthUI(ok){
+      AUTH=ok;
+      [$("#btnCreate"), $("#openCreate2"), $("#btnLogout"), $("#btnLogoutTop")].forEach(ok?show:hide);
+      ok? hide($("#btnLoginTop")) : show($("#btnLoginTop"));
+      $("#authState").textContent = ok ? "Đã đăng nhập" : "Chưa đăng nhập";
+      $("#authState").className = "badge " + (ok?"ok":"warn");
+    }
+    function setNetUI(){
+      const online = navigator.onLine;
+      const badge=$("#netBadge");
+      badge.textContent = online?"ONLINE":"OFFLINE";
+      badge.className = "badge " + (online?"ok":"err");
+      $("#lastSync").textContent = LAST_SYNC? ("• sync: "+LAST_SYNC):"";
+    }
+
+    function openLogin(){ $("#loginOverlay").style.display="flex"; $("#loginUser").focus(); }
+    function closeLogin(){ $("#loginOverlay").style.display="none"; }
+
+    async function checkSession(){
+      try{ const r=await apiSession(); setAuthUI(!!r.logged_in); }
+      catch{ setAuthUI(false); }
+    }
+
+    /* =================== TABLE RENDER =================== */
+    function skeletonRows(n=6){
+      const body=$("#tbody"); body.innerHTML="";
+      for(let i=0;i<n;i++){
+        const tr=document.createElement("tr");
+        for(let j=0;j<11;j++){
+          const td=document.createElement("td");
+          if(j===0) td.className="sticky-checkbox";
+          if(j===10) td.className="sticky-left";
+          const sk=document.createElement("div"); sk.className="skeleton"; sk.style.height="18px"; sk.style.width = (j===2? "220px" : j===4? "140px" : "100px");
+          td.appendChild(sk); tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      }
+    }
+
+    function applyFilters(arr){
+      const q=$("#qSearch").value.toLowerCase().trim(), t=$("#fType").value, s=$("#fStatus").value;
+      return arr.filter(x=>{
+        const hay=[x.key_string,x.hwid,x.ip_address,x.created_by,x.status_text].map(v=>String(v||"")).join(" ").toLowerCase();
+        const passQ = !q || hay.includes(q);
+        const passT = !t || x.key_type===t;
+        const normalized = x.is_banned ? "BANNED" :
+          (x.status_text==="Đang hoạt động"?"ACTIVE": (x.status_text||""));
+        const pending = (!x.is_banned && x.status_text!=="Hết Hạn" && x.status_text!=="Đang hoạt động");
+        const passS = !s || (s==="Chưa kích hoạt" ? pending : normalized===s || x.status_text===s);
+        return passQ && passT && passS;
+      });
+    }
+
+    function sortData(arr){
+      const {key,dir}=SORT;
+      const mul = dir==="asc"?1:-1;
+      return arr.slice().sort((a,b)=>{
+        const va = key==="rank" ? (a.__rank||0) :
+          key==="status" ? formatStatus(a).label :
+          a[key] ?? "";
+        const vb = key==="rank" ? (b.__rank||0) :
+          key==="status" ? formatStatus(b).label :
+          b[key] ?? "";
+        if(key==="expires_at"){
+          const da = new Date(va||0).getTime(); const db = new Date(vb||0).getTime();
+          return (da-db)*mul;
+        }
+        return (String(va)).localeCompare(String(vb))*mul;
+      });
+    }
+
+    function renderKPIs(arr){
+      const total=arr.length;
+      const active=arr.filter(x=>!x.is_banned && x.status_text==="Đang hoạt động").length;
+      const expired=arr.filter(x=>x.status_text==="Hết Hạn").length;
+      const banned=arr.filter(x=>x.is_banned).length;
+      const setVal = (id,val)=>{ const el=$(id); el.textContent=val; el.classList.remove("skeleton"); };
+
+      setVal("#kpiTotal", total);
+      setVal("#kpiActive", active);
+      setVal("#kpiExpired", expired);
+      setVal("#kpiBanned", banned);
+    }
+
+    function render(){
+      const body=$("#tbody"); body.innerHTML="";
+      const filtered = applyFilters(DATA);
+      const sorted = sortData(filtered);
+      const pages=Math.max(1, Math.ceil(sorted.length/PAGE_SIZE)); PAGE=Math.min(Math.max(1,PAGE),pages);
+      const view=sorted.slice((PAGE-1)*PAGE_SIZE,(PAGE-1)*PAGE_SIZE+PAGE_SIZE);
+
+      if(!view.length){
+        body.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--muted)">Không có dữ liệu</td></tr>';
+      }
+
+      for(const k of view){
+        const tr=document.createElement("tr");
+
+        // Checkbox
+        const tdCheck=document.createElement("td");
+        tdCheck.className="sticky-checkbox";
+        tdCheck.innerHTML = `
+          <div class="checkbox-container">
+            <input type="checkbox" data-key="${k.key_string}" id="check_${k.key_string}">
+          </div>`;
+        tdCheck.querySelector("input").addEventListener("change", (e) => {
+          toggleKeySelection(k.key_string, e.target.checked);
+        });
+        tr.appendChild(tdCheck);
+
+        // Basic info
+        tr.insertCell().textContent = k.__rank ?? "-";
+        tr.insertCell().textContent = k.key_string;
+
+        const tdType=tr.insertCell(); 
+        tdType.textContent = (k.key_type==="single_device"?"1 Thiết bị":"Nhiều người dùng");
+
+        tr.insertCell().textContent = k.expires_at || "";
+
+        const tdH=tr.insertCell(); 
+        tdH.innerHTML = `<span>${k.hwid||""}</span>`;
+        if(k.hwid){
+          const copyBtn = document.createElement("button");
+          copyBtn.className = "btn small";
+          copyBtn.style.marginLeft = "4px";
+          copyBtn.textContent = "⧉";
+          copyBtn.title = "Sao chép HWID";
+          copyBtn.onclick=()=>{ navigator.clipboard.writeText(k.hwid||""); toast("Đã copy HWID","success"); };
+          tdH.appendChild(copyBtn);
+        }
+
+        const tdIP=tr.insertCell(); 
+        tdIP.innerHTML = `<span>${k.ip_address||""}</span>`;
+        if(k.ip_address){
+          const copyBtn = document.createElement("button");
+          copyBtn.className = "btn small";
+          copyBtn.style.marginLeft = "4px";
+          copyBtn.textContent = "⧉";
+          copyBtn.title = "Sao chép IP";
+          copyBtn.onclick=()=>{ navigator.clipboard.writeText(k.ip_address||""); toast("Đã copy IP","success"); };
+          tdIP.appendChild(copyBtn);
+        }
+
+        tr.insertCell().textContent = k.created_by||"Unknown";
+
+        const tdStatus=tr.insertCell(); 
+        const st=formatStatus(k);
+        tdStatus.innerHTML = `<span class="chip ${st.cls}">${st.label}</span>`;
+
+        tr.insertCell().textContent = k.violations ?? 0;
+
+        // Actions
+        const tdAct=document.createElement("td");
+        tdAct.className="sticky-left";
+        tdAct.innerHTML = `
+          <div class="action-buttons">
+            <button class="action-btn stats" title="Thống kê">📊</button>
+            ${k.is_banned?
+              '<button class="action-btn unban" title="Unban key">✅</button>':
+              '<button class="action-btn ban" title="Ban key">🚫</button>'
+            }
+            <button class="action-btn delete" title="Xóa key">🗑️</button>
+            <button class="action-btn copy" title="Sao chép key">📋</button>
+          </div>`;
+        
+        tdAct.querySelector(".ban")?.addEventListener("click",()=>banKey(k.key_string));
+        tdAct.querySelector(".unban")?.addEventListener("click",()=>unbanKey(k.key_string));
+        tdAct.querySelector(".delete")?.addEventListener("click",()=>confirmDelete(k.key_string));
+        tdAct.querySelector(".copy")?.addEventListener("click",async()=>{ 
+          await navigator.clipboard.writeText(k.key_string); 
+          toast("Đã sao chép key","success"); 
+        });
+        tdAct.querySelector(".stats")?.addEventListener("click",()=>openStats(k.key_string));
+        tr.appendChild(tdAct);
+
+        body.appendChild(tr);
+      }
+
+      // Update checkboxes state
+      renderCheckboxes();
+      
+      $("#pageInfo").textContent = `Trang ${PAGE}/${Math.max(1,Math.ceil(applyFilters(DATA).length/PAGE_SIZE))} • ${applyFilters(DATA).length} keys`;
+      $("#prev").disabled=PAGE<=1; $("#next").disabled=PAGE>=Math.ceil(applyFilters(DATA).length/PAGE_SIZE);
+      renderKPIs(DATA);
+    }
+
+    async function load(){
+      skeletonRows(8);
+      try{
+        const res = await apiListKeys(1, 800);
+        const list = Array.isArray(res.items) ? res.items : (Array.isArray(res)?res:[]);
+        LAST_LIST_RAW = list.slice();
+        DATA = list.map((x,i)=>({...x,__rank:i+1}));
+        LAST_SYNC = nowStr();
+        setNetUI();
+        PAGE=1;
+        SELECTED_KEYS.clear();
+        updateBulkUI();
+        render();
+      }catch(e){
+        $("#tbody").innerHTML='<tr><td colspan="11" style="text-align:center;color:#ffb4b4">Lỗi tải keys: '+(e.message||"")+'</td></tr>';
+        toast("Tải danh sách thất bại","error");
+      }
+    }
+
+    /* =================== ACTIONS =================== */
+    function confirmBox(title,msg,yes){
+      $("#cfTitle").textContent=title; $("#cfMsg").textContent=msg; $("#mConfirm").style.display="flex";
+      const onYes=()=>{ $("#mConfirm").style.display="none"; yes&&yes(); cleanup(); };
+      const onNo =()=>{ $("#mConfirm").style.display="none"; cleanup(); };
+      $("#cfYes").addEventListener("click", onYes, {once:true});
+      $$("#mConfirm [data-close]").forEach(b=>b.addEventListener("click", onNo, {once:true}));
+      function cleanup(){ /* listeners are once:true */ }
+    }
+    function confirmDelete(key){ confirmBox("Xóa key", "Xóa vĩnh viễn key: "+key+" ?", ()=>delKey(key)); }
+
+    async function delKey(key){ try{ await apiDelete(key); toast("Đã xóa","success"); await load(); } catch(e){ toast(e.message||"Xóa thất bại","error"); } }
+    async function banKey(key){ try{ await apiBan(key); toast("Đã ban","success"); await load(); } catch(e){ toast(e.message||"Ban thất bại","error"); } }
+    async function unbanKey(key){ try{ await apiUnban(key); toast("Đã unban","success"); await load(); } catch(e){ toast(e.message||"Unban thất bại","error"); } }
+
+    function openCreate(){ if(!AUTH){ openLogin(); return; } $("#mCreate").style.display="flex"; }
+    function closeCreate(){ $("#mCreate").style.display="none"; }
+    async function createKey(){
+      if(!AUTH){ openLogin(); return; }
+      const days=parseInt($("#cDays").value||"0",10);
+      const type=$("#cType").value;
+      const created_by=$("#cCreator").value.trim()||"AdminPanel";
+      const note=$("#cNote").value.trim();
+      if(!days||days<=0) return toast("Số ngày không hợp lệ","error");
+      $("#cSubmit").disabled=true; $("#cSubmit").textContent="Đang tạo…";
+      try{
+        await apiCreateKey({days,type,created_by,note});
+        toast("Tạo thành công","success"); closeCreate(); await load();
+      }catch(e){ toast(e.message||"Tạo thất bại","error"); }
+      finally{ $("#cSubmit").disabled=false; $("#cSubmit").textContent="Tạo"; }
+    }
+
+    async function openStats(key){
+      try{
+        const d = await apiStats(key);
+        alert(`Key: ${key}\nThiết bị: ${d.total_devices}\nĐang hoạt động: ${d.active_devices}/${d.total_devices}\nLần dùng gần nhất: ${d.last_used||"N/A"}`);
+      }catch(e){ toast(e.message||"Không lấy được thống kê","error"); }
+    }
+
+    /* =================== LOGIN =================== */
+    let _loginBusy=false;
+    async function doLogin(){
+      if(_loginBusy) return;
+      const username=$("#loginUser").value.trim();
+      const password=$("#loginPass").value;
+      $("#loginErr").classList.add("hidden");
+      if(!username || !password){ $("#loginErr").textContent="Vui lòng nhập đủ tài khoản & mật khẩu"; $("#loginErr").classList.remove("hidden"); return; }
+
+      _loginBusy=true; $("#btnLogin").disabled=true; $("#loginSpinner").classList.remove("hidden");
+      try{
+        await apiLogin(username,password);
+        closeLogin(); setAuthUI(true); toast("Đăng nhập thành công","success"); await load();
+      }catch(e){
+        $("#loginErr").textContent = e.message || "Sai tài khoản/mật khẩu hoặc server không phản hồi";
+        $("#loginErr").classList.remove("hidden");
+      }finally{
+        _loginBusy=false; $("#btnLogin").disabled=false; $("#loginSpinner").classList.add("hidden");
+      }
+    }
+    async function doLogout(){ await apiLogout(); setAuthUI(false); toast("Đã đăng xuất","success"); await load(); }
+
+    /* =================== TAB SWITCHING =================== */
+    function switchTab(tab){
+      if(tab === 'keys'){
+        show($("#keysContainer"));
+        hide($("#freeContainer"));
+        $("#dashboardTitle").textContent = "Dashboard";
+        $("#navKeys").classList.add("active");
+        $("#navFree").classList.remove("active");
+        load();
+      } else if(tab === 'free'){
+        hide($("#keysContainer"));
+        show($("#freeContainer"));
+        $("#dashboardTitle").textContent = "Tạo Key Free";
+        $("#navKeys").classList.remove("active");
+        $("#navFree").classList.add("active");
+      } else if(tab === 'activity'){
+        toast("Nhật ký: sẽ cập nhật sau");
+      }
+    }
+
+    /* =================== FREE KEY CREATION =================== */
+    async function createFreeKeys(){
+      if(!AUTH){ openLogin(); return; }
+      const quantity = parseInt($("#fQuantity").value||"0",10);
+      const days = parseInt($("#fDays").value||"0",10);
+      const type = $("#fType").value;
+      const created_by = $("#fCreator").value.trim()||"AdminPanel-Free";
+      const note = $("#fNote").value.trim();
+      if(!quantity || quantity <= 0) return toast("Số lượng không hợp lệ","error");
+      if(!days || days <= 0) return toast("Số ngày không hợp lệ","error");
+      $("#fSubmit").disabled = true; $("#fSubmit").textContent = "Đang tạo…";
+      try{
+        const keys = [];
+        for(let i = 0; i < quantity; i++){
+          const res = await apiCreateKey({days, type, created_by, note});
+          keys.push(res.key); // Giả sử API trả về {key: "new_key_string"}
+        }
+        $("#freeKeys").value = keys.join("\n");
+        show($("#freeResult"));
+        toast(`Đã tạo thành công ${quantity} key free`,"success");
+        await load(); // Refresh keys list if needed
+      }catch(e){ toast(e.message||"Tạo thất bại","error"); }
+      finally{ $("#fSubmit").disabled = false; $("#fSubmit").textContent = "Tạo Key Free"; }
+    }
+
+    /* =================== EVENTS =================== */
+    document.addEventListener("DOMContentLoaded", async()=>{
+      setNetUI();
+
+      // Bulk actions
+      $("#selectAll").addEventListener("change", (e) => {
+        selectAllKeys(e.target.checked);
+      });
+      $("#headerCheckbox").addEventListener("change", (e) => {
+        selectAllKeys(e.target.checked);
+      });
+      $("#btnBulkBan").addEventListener("click", () => bulkAction('ban'));
+      $("#btnBulkUnban").addEventListener("click", () => bulkAction('unban'));
+      $("#btnBulkDelete").addEventListener("click", () => bulkAction('delete'));
+      $("#btnClearSelection").addEventListener("click", () => {
+        SELECTED_KEYS.clear();
+        updateBulkUI();
+        renderCheckboxes();
+      });
+
+      // Nav / buttons
+      $("#navKeys").onclick=()=>switchTab('keys');
+      $("#navFree").onclick=()=>switchTab('free');
+      $("#navActivity").onclick=()=>switchTab('activity');
+
+      $("#btnCreate").onclick=openCreate; $("#openCreate2").onclick=openCreate;
+      $("#cSubmit").onclick=createKey; $$("#mCreate [data-close]").forEach(b=>b.onclick=closeCreate);
+      $$(".modal-bg").forEach(bg=>bg.addEventListener("click",e=>{ if(e.target===bg) bg.style.display="none"; }));
+      $("#btnReload").onclick=()=>load();
+      $("#btnClear").onclick=async()=>{
+        try{
+          localStorage.clear(); sessionStorage.clear();
+          if("caches" in window){ const ks = await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
+          if("serviceWorker" in navigator){ const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); }
+          await apiLogout();
+        }catch{}
+        toast("Đã xoá cache & đăng xuất","success");
+        await checkSession(); render();
+      };
+
+      $("#btnLoginTop").onclick=openLogin;
+      $("#btnCloseLogin").onclick=closeLogin;
+      $("#btnLogin").onclick=doLogin;
+      $("#loginPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
+      $("#btnLogout").onclick=doLogout; $("#btnLogoutTop").onclick=doLogout;
+
+      $("#qSearch").oninput=debounce(()=>{ PAGE=1; render(); },220);
+      $("#fType").onchange=()=>{PAGE=1;render();};
+      $("#fStatus").onchange=()=>{PAGE=1;render();};
+      $("#pageSize").onchange=()=>{PAGE_SIZE=parseInt($("#pageSize").value,10)||15; PAGE=1; render();};
+      $("#prev").onclick=()=>{PAGE--;render();};
+      $("#next").onclick=()=>{PAGE++;render();};
+      $("#btnExport").onclick=()=>{
+        const rows = applyFilters(DATA);
+        if(!rows.length){ toast("Không có dữ liệu để xuất","warn"); return; }
+        const csv = makeCsv(rows);
+        const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a"); a.href=url; a.download=`nd-keys-${Date.now()}.csv`; a.click();
+        URL.revokeObjectURL(url);
+        toast("Đã xuất CSV","success");
+      };
+
+      // sort headers
+      $$("#tbl thead th.sortable").forEach(th=>{
+        th.addEventListener("click", ()=>{
+          const key=th.dataset.sort;
+          SORT = { key, dir: (SORT.key===key && SORT.dir==="asc") ? "desc" : "asc" };
+          render();
+        });
+      });
+
+      function makeCsv(rows){
+        const header=["rank","key","type","expires_at","hwid","ip","created_by","status","violations"];
+        const escape=v=>('"'+String(v??"").replace(/"/g,'""')+'"');
+        const lines=[header.join(",")];
+        for(const r of rows){
+          const st=formatStatus(r);
+          const line=[
+            r.__rank ?? "",
+            r.key_string ?? "",
+            r.key_type ?? "",
+            r.expires_at ?? "",
+            r.hwid ?? "",
+            r.ip_address ?? "",
+            r.created_by ?? "",
+            st.label,
+            r.violations ?? 0
+          ].map(escape).join(",");
+          lines.push(line);
+        }
+        return lines.join("\r\n");
+      }
+
+      // Free Key Events
+      $("#fSubmit").onclick = createFreeKeys;
+      $("#fCopy").onclick = async () => {
+        await navigator.clipboard.writeText($("#freeKeys").value);
+        toast("Đã sao chép tất cả key","success");
+      };
+      $("#fClear").onclick = () => {
+        $("#freeKeys").value = "";
+        hide($("#freeResult"));
+      };
+
+      // init
+      await checkSession();
+      switchTab('keys');
+    });
+
+    window.addEventListener("online", setNetUI);
+    window.addEventListener("offline", setNetUI);
+  </script>
+</body>
+</html>
